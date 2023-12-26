@@ -34,8 +34,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/fallentom/code/C/placeholder/src",
-      "program": "/home/fallentom/code/C/placeholder/src/build/Debug/outDebug",
+      "cwd": "/home/fallentom/code/C/sudoku_assignment/src",
+      "program": "/home/fallentom/code/C/sudoku_assignment/src/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

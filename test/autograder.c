@@ -72,7 +72,7 @@ void load_cell_candidates(Cell *p_cell, char *textData)
             candidates[counter++] = cand;
     }
 
-    set_candidates(p_cell, candidates, counter);
+    reset_set_candidates(p_cell, candidates, counter);
     if (bin_candidates[0])
         p_cell->fixed = true;
     else
