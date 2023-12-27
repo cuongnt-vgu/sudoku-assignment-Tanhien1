@@ -6,11 +6,12 @@
 int naked_triples(SudokuBoard *board)
 {
     struct naked_triple_reserved *HEAD = NULL;
-    int num_naked_triple;
-    for (int row =0; row <BOARD_SIZE; row++){
+    int num_naked_triple = 0;
+    for (int row =8; row <BOARD_SIZE; row++){
         for (int col =0; col<BOARD_SIZE; col++){
             Cell *cell = &board->data[row][col];
-            if (check_board(board,cell,HEAD)) num_naked_triple++;
+            if (not_num_2_3(cell)) continue;
+            if (check_board(board,cell,HEAD, &HEAD)) num_naked_triple++;
         }
     }
     transverse_naked_triple(HEAD,board);
@@ -18,8 +19,9 @@ int naked_triples(SudokuBoard *board)
     return num_naked_triple;
 }
 
-bool check_board(SudokuBoard *board, Cell *specifiCell, struct naked_triple_reserved *HEAD){
+bool check_board(SudokuBoard *board, Cell *specifiCell, struct naked_triple_reserved *current, struct naked_triple_reserved **HEAD){
     // check col/row/box for another 2 instances of 3-num-candidates cell
+    // current act s temp in this case, HEAD is the global point to linked list
     int row = specifiCell->row_index;
     int col = specifiCell->col_index;
     int box = specifiCell->box_index;
@@ -33,12 +35,12 @@ bool check_board(SudokuBoard *board, Cell *specifiCell, struct naked_triple_rese
             if (not_num_2_3(cell3)) continue;
             int *temp = sumCandidates(specifiCell->candidates,cell2->candidates,cell3->candidates);
             if (can_be_candidate(temp) && naked_tripable(temp)){
-                if (is_naked_triple(HEAD,specifiCell,cell2,cell3)){
+                if (is_naked_triple(current,specifiCell,cell2,cell3)){
                     free(temp);
                     //insert
-                    insert_naked_triple(&HEAD, specifiCell);
-                    insert_naked_triple(&HEAD, cell2);
-                    insert_naked_triple(&HEAD, cell3);
+                    insert_naked_triple(HEAD, specifiCell);
+                    insert_naked_triple(HEAD, cell2);
+                    insert_naked_triple(HEAD, cell3);
                     return true;
                 }
             }
@@ -46,28 +48,30 @@ bool check_board(SudokuBoard *board, Cell *specifiCell, struct naked_triple_rese
         } 
     } 
 
-    //transverse thru same col, to look for 2 instances
+    //transverse thru same col twice, to look for 2 instances
      for (int i = row + 1; i< BOARD_SIZE; i++){
         Cell *cell2 = &board->data[i][col];
-        if (not_num_2_3(cell2)) continue;
+            if (not_num_2_3(cell2)) continue;
         for (int j = i + 1; j <BOARD_SIZE; j++ ){
             Cell *cell3 = &board->data[j][col];
             if (not_num_2_3(cell3)) continue;
             int *temp = sumCandidates(specifiCell->candidates,cell2->candidates,cell3->candidates);
-            if (can_be_candidate(temp) && naked_tripable(temp)){
-                if (is_naked_triple(HEAD,specifiCell,cell2,cell3)){
-                    free(temp);
-                    insert_naked_triple(&HEAD, specifiCell);
-                    insert_naked_triple(&HEAD, cell2);
-                    insert_naked_triple(&HEAD, cell3);
-                    return true;
+            if (can_be_candidate(temp)){
+                if (naked_tripable(temp)){
+                    if (is_naked_triple(current,specifiCell,cell2,cell3)){
+                        free(temp);
+                        insert_naked_triple(HEAD, specifiCell);
+                        insert_naked_triple(HEAD, cell2);
+                        insert_naked_triple(HEAD, cell3);
+                        return true;
+                    }
                 }
             }
             free(temp);
         } 
     }
     
-    //transverse thru same box, to look for 2 instances
+    //transverse thru same box twice, to look for 2 instances
     // calculate first cell of box
     int currRow = (int) (box/3)*3;
     int currCol = (col%3)*3;
@@ -81,11 +85,11 @@ bool check_board(SudokuBoard *board, Cell *specifiCell, struct naked_triple_rese
                     if(not_num_2_3(cell3)) continue;
                     int *temp = sumCandidates(specifiCell->candidates,cell2->candidates,cell3->candidates);
                     if (can_be_candidate(temp) && naked_tripable(temp)){
-                        if (is_naked_triple(HEAD,specifiCell,cell2,cell3)){
+                        if (is_naked_triple(current,specifiCell,cell2,cell3)){
                             free(temp);
-                            insert_naked_triple(&HEAD, specifiCell);
-                            insert_naked_triple(&HEAD, cell2);
-                            insert_naked_triple(&HEAD, cell3);
+                            insert_naked_triple(HEAD, specifiCell);
+                            insert_naked_triple(HEAD, cell2);
+                            insert_naked_triple(HEAD, cell3);
                             return true;
                         }
                     }
@@ -101,6 +105,10 @@ bool check_board(SudokuBoard *board, Cell *specifiCell, struct naked_triple_rese
 int *sumCandidates (int arrCell1[], int arrCell2[], int arrCell3[]){
     //add 3 candidates arr together, only those that have non-zeros = 3 passed
     int *total = malloc(sizeof(int) * BOARD_SIZE);
+    //init arr = {0}
+    for (int i = 0; i< BOARD_SIZE; i++){
+        total[i] = 0;
+    }
     for (int i=0; i<BOARD_SIZE; i++){
         total[i] += arrCell1[i] + arrCell2[i] + arrCell3[i];
     }
@@ -121,16 +129,16 @@ bool can_be_candidate(int arr[]){
 bool naked_tripable(int arr[]){
     // if all non-zeros are atleast = 2 then is naked triple
     for (int i =0; i< BOARD_SIZE; i++){
-        if(arr[i] != 0 && !((arr[i] == 2) || (arr[i] == 3)) ){
-            return false;
+        if(arr[i] != 0 && ((arr[i] >= 2) || (arr[i] <= 3)) ){
+            return true;
         }
     }
-    return true;
+    return false;
 }
 
 bool not_num_2_3 (Cell *cell){
     // if cell is not 2 or 3 candidates, true
-    return (cell->num_candidates != 2) || (cell->num_candidates != 3);
+    return (cell->num_candidates < 2) || (cell->num_candidates > 3);
 }
 
 bool comparePos(struct naked_triple_reserved *HEAD, Cell *checkedCell){
@@ -183,6 +191,14 @@ void remove_candidate_naked_triple (struct naked_triple_reserved *HEAD, SudokuBo
     int box = temp->box;
     int *candidateArr = temp->arrCandidate;
     int size = temp->arrSize;
+    //adjust for it  to not remove itself
+    static int already =0;
+    if (already == 0 || already == 1) already++;
+    if (already == 2 ){
+        already = 0;
+        free(candidateArr);
+        return;
+    } 
     //transverse thru same row and unset naked triple candidates
     for (int i = 0; i <BOARD_SIZE; i++){
         if (i == col) continue;
@@ -223,6 +239,7 @@ void free_naked_triple (struct naked_triple_reserved *HEAD){
     struct naked_triple_reserved *next;
     while(current != NULL){
         next = current->next;
+        
         free (current);
         current = next;
     }

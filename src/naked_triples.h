@@ -14,8 +14,8 @@ struct naked_triple_reserved{
 
 int naked_triples(SudokuBoard *board);
 
-//main fuction to check for naked triple
-bool check_board(SudokuBoard *board, Cell *specifiCell, struct naked_triple_reserved *HEAD);
+//main fuction to check for naked triple, current acts as temp, HEAD is the head of linked list
+bool check_board(SudokuBoard *board, Cell *specifiCell, struct naked_triple_reserved *current, struct naked_triple_reserved **HEAD);
 // output an array that is the sum of 3 candidates array of 3 cel
 int *sumCandidates (int arrCell1[], int arrCell2[], int arrCell3[]);
 //check sum arr for total of non-zeros = 3
