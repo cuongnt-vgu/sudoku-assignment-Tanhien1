@@ -7,7 +7,7 @@ int naked_triples(SudokuBoard *board)
 {
     struct naked_triple_reserved *HEAD = NULL;
     int num_naked_triple = 0;
-    for (int row =8; row <BOARD_SIZE; row++){
+    for (int row =0; row <BOARD_SIZE; row++){
         for (int col =0; col<BOARD_SIZE; col++){
             Cell *cell = &board->data[row][col];
             if (not_num_2_3(cell)) continue;
@@ -163,6 +163,16 @@ bool is_naked_triple (struct naked_triple_reserved *HEAD, Cell *cell1, Cell *cel
     return comparePos(temp, cell1) && comparePos(temp,cell2) && comparePos(temp, cell3);
 }
 
+bool has_naked_triple (Cell *cell, int arr[], int size){
+    // check for if that cell has any naked triple candidate that has not been removed
+    for (int i =0; i<size; i++){
+        if (cell->candidates[arr[i] - 1] == 1){
+            return true; 
+        }
+    }
+    return false;
+}
+
 //helper for linked list section
 void insert_naked_triple(struct naked_triple_reserved **HEAD, Cell *cell){
     struct naked_triple_reserved *newNode = malloc(sizeof(struct naked_triple_reserved));
@@ -186,46 +196,95 @@ void transverse_naked_triple(struct naked_triple_reserved *HEAD, SudokuBoard *bo
 void remove_candidate_naked_triple (struct naked_triple_reserved *HEAD, SudokuBoard *board){
     //remove all naked triple candidate from other cells apart itself
     struct naked_triple_reserved *temp = HEAD;
-    int col = temp->col;
-    int row = temp->row;
-    int box = temp->box;
+    if (temp == NULL) return;
     int *candidateArr = temp->arrCandidate;
     int size = temp->arrSize;
-    //adjust for it  to not remove itself
-    static int already =0;
-    if (already == 0 || already == 1) already++;
-    if (already == 2 ){
-        already = 0;
-        free(candidateArr);
-        return;
-    } 
+    //adjust for it  to not remove itself and avoid naked triple cell
+    // extremely sloppy attempt to move through all naked triple while not allowing removal of self
+    // and skip already declared positions
+    static int skip =0;
+    if (skip == 0) skip = 3;
+    //declare pos 1st cell
+    static int col;
+    static int row;
+    static int box;
+    //declare pos 2nd cell
+    static int col2;
+    static int row2;
+    static int box2;
+    //declare pos 3rd cell
+    static int col3;
+    static int row3;
+    static int box3;
+    if (skip == 3){
+        //pos of 1st cell
+        col = temp->col;
+        row = temp->row;
+        box = temp->box;
+        //pos of 2nd cell
+        temp= temp->next;
+        col2 = temp->col;
+        row2 = temp->row;
+        box2 = temp->box;
+        //pos of 3rd cell
+        temp= temp->next;
+        col3 = temp->col;
+        row3 = temp->row;
+        box3 = temp->box;
+    }
+
+    skip --;
+    // n is case, 0=row 1=col 2=box
+    int n = 9;
+    if (col == col2 && col2 == col3) n=1;
+    if (row == row2 && row2 == row3) n=0;
+    if (box == box2 && box2 == box3) n=2;
+
+    
     //transverse thru same row and unset naked triple candidates
-    for (int i = 0; i <BOARD_SIZE; i++){
-        if (i == col) continue;
-        Cell *cell = &board->data[row][i];
-        for (int j =0; j <size; j ++ ){
-            unset_candidate(cell, candidateArr[j] + 1);
+    if (n==0){
+        for (int i = 0; i <BOARD_SIZE; i++){
+            if (i == col || i == col2 || i == col3) continue;
+            Cell *cell = &board->data[row][i];
+            if (!has_naked_triple(cell,candidateArr,size)) continue;
+            for (int j =0; j <size; j ++ ){
+                // so that it does not remove same candidate twice which leads to num candidate<real
+                if (cell->candidates[candidateArr[j]-1] == 0) continue;
+                unset_candidate(cell, candidateArr[j] );
+            }
         }
     }
     //transverse thru same col and unset naked triple candidates
-    for (int i = 0; i <BOARD_SIZE; i++){
-        if (i == row) continue;
-        Cell *cell = &board->data[i][col];
-        for (int j =0; j <size; j ++ ){
-            unset_candidate(cell, candidateArr[j] + 1);
+    if (n==1){
+        for (int i = 0; i <BOARD_SIZE; i++){
+            if (i == row || i == row2 || i == row3) continue;
+            Cell *cell = &board->data[i][col];
+            if (!has_naked_triple(cell,candidateArr,size)) continue;
+            for (int j =0; j <size; j ++ ){
+                // so that it does not remove same candidate twice which leads to num candidate<real
+                if (cell->candidates[candidateArr[j]-1] == 0) continue;
+                unset_candidate(cell, candidateArr[j] );
+            }
         }
     }
+    
 
     //transverse thru same box and unset naked triple candidates
     //calculate first cell of box
-    int currCol = (box%3)*3;
-    int currRow = (box/3)*3;
-    for (int i = currRow; i< currRow + 3; i++){
-        for (int j = currCol; j < currCol +3; j++){
-            if (i == row && j == col) continue;
-            Cell *cell = &board->data[i][j];
-            for (int k = 0; k <size; k++){
-                unset_candidate(cell, candidateArr[k]+1);
+    if (n==2){
+        int currCol = (box%3)*3;
+        int currRow = (box/3)*3;
+        for (int i = currRow; i< currRow + 3; i++){
+            for (int j = currCol; j < currCol +3; j++){
+                if (((i == row) || (i == row2) || (i == row3))
+                && ((j == col) || (j == col2) || (j == col3))) continue;
+                Cell *cell = &board->data[i][j];
+                if (!has_naked_triple(cell,candidateArr,size)) continue;
+                for (int k = 0; k <size; k++){
+                    // so that it does not remove same candidate twice which leads to num candidate<real
+                    if (cell->candidates[candidateArr[k]-1] == 0) continue;
+                    unset_candidate(cell, candidateArr[k]);
+                }
             }
         }
     }

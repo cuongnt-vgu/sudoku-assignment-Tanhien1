@@ -28,6 +28,8 @@ bool not_num_2_3 (Cell *cell);
 bool comparePos(struct naked_triple_reserved *HEAD, Cell *checkedCell);
 //compare all three cell for dulplicate (the naked triple has to be brand new)
 bool is_naked_triple (struct naked_triple_reserved *HEAD, Cell *cell1, Cell *cell2, Cell *cell3);
+//check for appearence of naked triple in a cell (to avoid over removal)
+bool has_naked_triple (Cell *cell, int arr[], int size);
 
 //linked list helper functions section
 //insert a cell into linkedlist
