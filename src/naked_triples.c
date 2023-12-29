@@ -34,14 +34,15 @@ bool check_board(SudokuBoard *board, Cell *specifiCell, struct naked_triple_rese
             Cell *cell3 = &board->data[row][j];
             if (not_num_2_3(cell3)) continue;
             int *temp = sumCandidates(specifiCell->candidates,cell2->candidates,cell3->candidates);
-            if (can_be_candidate(temp) && naked_tripable(temp)){
-                if (is_naked_triple(current,specifiCell,cell2,cell3)){
-                    free(temp);
-                    //insert
-                    insert_naked_triple(HEAD, specifiCell);
-                    insert_naked_triple(HEAD, cell2);
-                    insert_naked_triple(HEAD, cell3);
-                    return true;
+           if (can_be_candidate(temp)){
+                if (naked_tripable(temp)){
+                    if (is_naked_triple(current,specifiCell,cell2,cell3)){
+                        free(temp);
+                        insert_naked_triple(HEAD, specifiCell);
+                        insert_naked_triple(HEAD, cell2);
+                        insert_naked_triple(HEAD, cell3);
+                        return true;
+                    }
                 }
             }
             free(temp);
@@ -84,16 +85,18 @@ bool check_board(SudokuBoard *board, Cell *specifiCell, struct naked_triple_rese
                     Cell *cell3 = &board->data[x][y];
                     if(not_num_2_3(cell3)) continue;
                     int *temp = sumCandidates(specifiCell->candidates,cell2->candidates,cell3->candidates);
-                    if (can_be_candidate(temp) && naked_tripable(temp)){
-                        if (is_naked_triple(current,specifiCell,cell2,cell3)){
-                            free(temp);
-                            insert_naked_triple(HEAD, specifiCell);
-                            insert_naked_triple(HEAD, cell2);
-                            insert_naked_triple(HEAD, cell3);
-                            return true;
-                        }
-                    }
-                    free(temp);
+                   if (can_be_candidate(temp)){
+                        if (naked_tripable(temp)){
+                            if (is_naked_triple(current,specifiCell,cell2,cell3)){
+                                free(temp);
+                                insert_naked_triple(HEAD, specifiCell);
+                                insert_naked_triple(HEAD, cell2);
+                                insert_naked_triple(HEAD, cell3);
+                                return true;
+                            }
+                        } 
+                   }
+                free(temp);
                 }
             }
 
